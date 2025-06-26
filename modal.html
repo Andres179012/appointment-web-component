@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instagram Stories UI</title>
+    <link
+      href="https://cdn.jsdelivr.net/gh/InterscopeDevOps/reaktor-icons-font/style.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .modal-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .story {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 50vh;
+        width: 14vw;
+        background: white;
+        border-radius: 20px;
+        padding: 10px;
+        position: relative;
+      }
+
+      .story.main {
+        width: 28vw;
+        height: 95vh;
+      }
+
+      .image-modal {
+        width: 90%;
+        height: auto;
+        object-fit: cover;
+        border-radius: 10px;
+      }
+
+      .reaction {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+      }
+
+      .icon-chevron-left {
+        border: 2px solid white;
+        background: black;
+        color: white;
+        font-size: 20px;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        padding: 2px;
+      }
+
+      .icon-chevron-right {
+        border: 2px solid white;
+        background: black;
+        color: white;
+        font-size: 20px;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        padding: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="modal-content">
+      <div class="story">
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="image-modal"
+          alt="Story 1"
+        />
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="reaction"
+          alt="Reaction"
+        />
+      </div>
+
+      <div class="story">
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="image-modal"
+          alt="Story 2"
+        />
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="reaction"
+          alt="Reaction"
+        />
+      </div>
+      <i class="icon-chevron-left"></i>
+
+      <div class="story main">
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="image-modal"
+          alt="Main Story"
+        />
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="reaction"
+          alt="Reaction"
+        />
+      </div>
+      <i class="icon-chevron-right"></i>
+      <div class="story">
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="image-modal"
+          alt="Story 3"
+        />
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="reaction"
+          alt="Reaction"
+        />
+      </div>
+
+      <div class="story">
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="image-modal"
+          alt="Story 4"
+        />
+        <img
+          src="https://images.ctfassets.net/ihx0a8chifpc/GTlzd4xkx4LmWsG1Kw1BB/ad1834111245e6ee1da4372f1eb5876c/placeholder.com-1280x720.png?w=1280&q=60&fm=webp"
+          class="reaction"
+          alt="Reaction"
+        />
+      </div>
+    </div>
+  </body>
+</html>
