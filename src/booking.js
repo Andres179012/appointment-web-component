@@ -1,7 +1,11 @@
-import { LitElement, html, css, unsafeCSS } from "lit";
+import { LitElement, html, unsafeCSS } from "lit";
 import { loadStripe } from "@stripe/stripe-js";
 
 class PremiumBookingWidget extends LitElement {
+  couponCode = "";
+  couponStatus = null; // { valid: true/false, message: '', discountPercent: 0 }
+  discountPercent = 0;
+  discountedTotal = null;
   static properties = {
     widgetId: { type: String },
     color: { type: String },
@@ -23,6 +27,7 @@ class PremiumBookingWidget extends LitElement {
     formError: { type: String },
   };
 
+
   constructor() {
     super();
     this.widgetId = "";
@@ -41,7 +46,7 @@ class PremiumBookingWidget extends LitElement {
     this.paymentError = "";
     this.bookingData = {
       serviceInfo: null,
-      schedule: { date: "", time: "", frequency: "one-time" },
+      schedule: { date: "", time: "", frequency: "one-time", notes: "" },
       generalInfo: {
         name: "",
         email: "",
@@ -51,6 +56,7 @@ class PremiumBookingWidget extends LitElement {
         state: "",
       },
       payment: { method: "card" },
+      additionalData: [],
     };
     this.cardData = {
       cardNumber: "",
@@ -58,12 +64,65 @@ class PremiumBookingWidget extends LitElement {
       expiryDate: "",
       cvv: "",
     };
+    // Opciones de tipos de baño (en inglés)
+    this.bathroomOptions = [
+      {
+        label: "Full bathroom (sink + toilet + shower and/or tub)",
+        value: "full_bathroom",
+      },
+      {
+        label: "Powder room (sink + toilet)",
+        value: "powder_room",
+      },
+      {
+        label: "Master bath (usually larger, often with double sink)",
+        value: "master_bath",
+      },
+      {
+        label: "Guest bath",
+        value: "guest_bath",
+      },
+      {
+        label: "En suite bath (connected to bedroom)",
+        value: "en_suite_bath",
+      },
+      {
+        label: "Staff bath",
+        value: "staff_bath",
+      },
+      {
+        label: "Pool bath (next to pool or outdoor area)",
+        value: "pool_bath",
+      },
+    ];
+    this.selectedBathrooms = [];
+    this.selectedBathroom = "";
     this.apiSecret = "booking-d9e180f3-d77d-4c25-a163-4605c8ddfb48";
     this.businessHours = {
       start: 7, // 7 AM
       end: 17, // 5 PM (formato 24h)
     };
     this.formError = "";
+  }
+
+
+  handleBathroomRadio(e) {
+    const { value } = e.target;
+    this.selectedBathroom = value;
+    // Buscar el label (texto) correspondiente al value seleccionado
+    const selectedOption = this.bathroomOptions.find(opt => opt.value === value);
+    const label = selectedOption ? selectedOption.label : value;
+    // Guardar en bookingData.additionalData el label (texto)
+    this.bookingData = {
+      ...this.bookingData,
+      additionalData: label,
+    };
+    // LOGO en consola para ver en tiempo real los items seleccionados
+    console.log('🛁 [BathroomType Selected]', {
+      selectedBathroom: value,
+      additionalData: this.bookingData.additionalData,
+    });
+    this.requestUpdate();
   }
 
   createRenderRoot() {
@@ -820,7 +879,6 @@ class PremiumBookingWidget extends LitElement {
   }
 
   async initializeStripe() {
-
     // Verifica que se haya cargado la clave pública
     if (!this.stripeConfig?.publicKey) {
       console.error("Stripe public key is not provided");
@@ -918,7 +976,7 @@ class PremiumBookingWidget extends LitElement {
     this.loading = true;
     try {
       const response = await fetch(
-        `https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/booking/settings/byAppId?appId=${this.widgetId}`,
+        `http://localhost:3000/api/booking/settings/byAppId?appId=${this.widgetId}`,
         {
           headers: { "x-api-secret": this.apiSecret },
         }
@@ -992,6 +1050,10 @@ class PremiumBookingWidget extends LitElement {
       subtotal: this.subtotal,
       total: this.total,
     };
+    // Guardar el label del baño seleccionado en additionalData
+    const selectedOption = this.bathroomOptions.find(opt => opt.value === this.selectedBathroom);
+    const label = selectedOption ? selectedOption.label : this.selectedBathroom;
+    this.bookingData.additionalData = label;
     this.showServiceDetails = false;
     this.nextStep();
   }
@@ -1048,7 +1110,62 @@ class PremiumBookingWidget extends LitElement {
       this.currentStep++;
       await this.updateComplete; // Esperar a que se complete la actualización
       this.scrollToStepTop();
+      // Reset coupon info when entering payment step
+      if (this.currentStep === 4) {
+        this.couponCode = "";
+        this.couponStatus = null;
+        this.discountPercent = 0;
+        this.discountedTotal = null;
+      }
     }
+  }
+
+  handleCouponInput(e) {
+    this.couponCode = e.target.value;
+    this.couponStatus = null;
+  }
+
+  async validateCoupon() {
+    this.couponStatus = null;
+    if (!this.couponCode || !this.bookingData?.serviceInfo?.total) {
+      this.couponStatus = { valid: false, message: "Enter a coupon code." };
+      await this.requestUpdate();
+      return;
+    }
+    try {
+      const code = encodeURIComponent(this.couponCode.trim());
+      const amount = this.bookingData.serviceInfo.total;
+      const clientId = this.widgetId;
+      const url = `http://localhost:3000/api/coupons/validate/${code}?amount=${amount}&clientId=${clientId}`;
+      const res = await fetch(url, {
+        headers: { "x-api-secret": this.apiSecret },
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = {};
+      }
+      if (!res.ok || !data.valid) {
+        // Mostrar siempre el mensaje de error del backend si existe
+        this.couponStatus = { valid: false, message: (data && data.error) ? data.error : (res.status === 404 ? "Coupon not found for this client" : "Invalid coupon.") };
+        this.discountPercent = 0;
+        this.discountedTotal = null;
+        await this.requestUpdate();
+        return;
+      }
+      this.discountPercent = data.discountPercent;
+      // Calcular el nuevo total con descuento
+      const total = this.bookingData.serviceInfo.total;
+      const discount = (total * this.discountPercent) / 100;
+      this.discountedTotal = Math.max(0, total - discount);
+      this.couponStatus = { valid: true, message: `Coupon applied! ${this.discountPercent}% off.` };
+    } catch (err) {
+      this.couponStatus = { valid: false, message: "Error validating coupon." };
+      this.discountPercent = 0;
+      this.discountedTotal = null;
+    }
+    await this.requestUpdate();
   }
 
   async prevStep() {
@@ -1101,32 +1218,6 @@ class PremiumBookingWidget extends LitElement {
 
   handleScheduleChange(e) {
     const { name, value } = e.target;
-
-    if (name === "time" && value) {
-      // Convertir HH:MM a minutos totales
-      const [hours, minutes] = value.split(":").map(Number);
-      const totalMinutes = hours * 60 + minutes;
-
-      // Redondear a los 15 minutos más cercanos
-      const roundedMinutes = Math.round(totalMinutes / 15) * 15;
-
-      // Convertir de vuelta a HH:MM
-      const roundedHours = Math.floor(roundedMinutes / 60);
-      const finalMinutes = roundedMinutes % 60;
-      const formattedTime = `${String(roundedHours).padStart(2, "0")}:${String(
-        finalMinutes
-      ).padStart(2, "0")}`;
-
-      this.bookingData.schedule = {
-        ...this.bookingData.schedule,
-        [name]: formattedTime,
-      };
-
-      // Actualizar el valor del input
-      e.target.value = formattedTime;
-      return;
-    }
-
     this.bookingData.schedule = {
       ...this.bookingData.schedule,
       [name]: value,
@@ -1189,6 +1280,9 @@ class PremiumBookingWidget extends LitElement {
         throw new Error(error.message);
       }
 
+      // Usar el total con descuento si existe
+      const totalToCharge = this.discountedTotal !== null ? this.discountedTotal : this.bookingData.serviceInfo.total;
+
       // Proceed to backend payment processing
       const bookingRequest = {
         bookingData: {
@@ -1202,7 +1296,7 @@ class PremiumBookingWidget extends LitElement {
             },
           },
           subtotal: this.bookingData.serviceInfo.subtotal,
-          total: this.bookingData.serviceInfo.total,
+          total: totalToCharge,
           clientInfo: this.bookingData.generalInfo,
           schedule: this.bookingData.schedule,
         },
@@ -1215,7 +1309,7 @@ class PremiumBookingWidget extends LitElement {
 
       // Send request to backend
       const response = await fetch(
-        "https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/booking/create-and-pay",
+        "http://localhost:3000/api/booking/create-and-pay",
         {
           method: "POST",
           headers: {
@@ -1258,6 +1352,8 @@ class PremiumBookingWidget extends LitElement {
     this.selectedService = null;
     this.selectedExtras = [];
     this.selectedSquareFootage = null;
+    this.selectedBathrooms = [];
+    this.selectedBathroom = "";
     this.showServiceDetails = false;
     this.cardData = {
       cardNumber: "",
@@ -1267,7 +1363,7 @@ class PremiumBookingWidget extends LitElement {
     };
     this.bookingData = {
       serviceInfo: null,
-      schedule: { date: "", time: "", frequency: "one-time" },
+      schedule: { date: "", time: "", frequency: "one-time", notes: "" },
       generalInfo: {
         name: "",
         email: "",
@@ -1277,6 +1373,7 @@ class PremiumBookingWidget extends LitElement {
         state: "",
       },
       payment: { method: "card" },
+      additionalData: [],
     };
   }
 
@@ -1493,6 +1590,44 @@ class PremiumBookingWidget extends LitElement {
                       </div>
                     `
                   : ""}
+
+                <!-- Radiobuttons para tipos de baño -->
+                <div class="bathroom-radios" style="margin: 1.5rem 0;">
+                  <h4 style="margin-bottom:0.5rem; text-align: center;">
+                    Select bathroom type
+                  </h4>
+                  <div
+                    style="display: flex; flex-wrap: wrap; justify-content: center;"
+                  >
+                    ${this.bathroomOptions.map(
+                      (option) => html`
+                        <label
+                          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95rem;
+            width: 150px;
+            margin: 0.5rem;
+            text-align: center;
+          "
+                        >
+                          <input
+                            type="radio"
+                            name="bathroomType"
+                            value="${option.value}"
+                            .checked=${this.selectedBathroom === option.value}
+                            @change=${this.handleBathroomRadio.bind(this)}
+                            style="accent-color: var(--primary-color); margin-bottom: 0.3rem;"
+                          />
+                          <span style="line-height: 1.2;">${option.label}</span>
+                        </label>
+                      `
+                    )}
+                  </div>
+                </div>
+
                 ${this.selectedService.additionalServices?.length > 0 ||
                 this.globalAdditionalServices.length > 0
                   ? html`
@@ -1539,7 +1674,14 @@ class PremiumBookingWidget extends LitElement {
                     <span>Base Service:</span>
                     <span>$${this.selectedService.price}</span>
                   </div>
-
+                  ${this.bookingData.additionalData
+                    ? html`
+                        <div class="summary-item">
+                          <span>Bathroom type:</span>
+                          <span>${this.bookingData.additionalData}</span>
+                        </div>
+                      `
+                    : ""}
                   ${this.selectedSquareFootage
                     ? html`
                         <div class="summary-item">
@@ -1558,7 +1700,6 @@ class PremiumBookingWidget extends LitElement {
                       </div>
                     `
                   )}
-
                   <div class="summary-item summary-total">
                     <span>Total:</span>
                     <span>$${this.total.toFixed(2)}</span>
@@ -1648,6 +1789,21 @@ class PremiumBookingWidget extends LitElement {
               <option value="bi-weekly">Bi-Weekly</option>
               <option value="monthly">Monthly</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="notes"
+              >Additional information to help us provide an exceptional
+              service</label
+            >
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              placeholder="Add any details, instructions, or special requests to help us serve you better..."
+              .value=${this.bookingData.schedule.notes || ""}
+              @input=${this.handleScheduleChange}
+              style="resize:vertical;width:100%;border-radius:10px;padding:0.7rem 1rem;border:1.5px solid var(--medium-gray);font-size:1rem;background:#f9fafb;"
+            ></textarea>
           </div>
           <div class="navigation-buttons">
             <button class="secondary" @click=${this.prevStep}>Back</button>
@@ -1739,20 +1895,43 @@ class PremiumBookingWidget extends LitElement {
   }
 
   renderStep4() {
-    // Esperar un momento después de que el paso se renderice para montar el elemento
+    // Montar Stripe element cada vez que se renderiza el paso 4
     setTimeout(() => {
       if (this.currentStep === 4) {
         this.setupStripeElement();
       }
     }, 100);
 
+    // Determinar si el mensaje es de éxito (si contiene 'Coupon applied!')
+    const isCouponSuccess = this.couponStatus && typeof this.couponStatus.message === 'string' && this.couponStatus.message.startsWith('Coupon applied!');
     return html`
       <div class="step-content" id="step-4">
         <div class="form-container">
           <h3>Payment Information</h3>
-          ${this.paymentError
-            ? html`<div class="error-message">${this.paymentError}</div>`
-            : ""}
+          <!-- Sección de cupón -->
+          <div class="form-group" style="margin-bottom:1.5rem;">
+            <label for="coupon">Coupon Code</label>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <input
+                type="text"
+                id="coupon"
+                name="coupon"
+                .value=${this.couponCode}
+                @input=${this.handleCouponInput.bind(this)}
+                style="flex:1;"
+                placeholder="Enter coupon code"
+                autocomplete="off"
+              />
+              <button type="button" @click=${this.validateCoupon.bind(this)} style="min-width:100px;">
+                Validate
+              </button>
+            </div>
+            ${this.couponStatus && this.couponStatus.message !== undefined
+              ? html`<div class="${isCouponSuccess ? 'success-message' : 'error-message'}" style="margin-top:0.5rem;">
+                  ${this.couponStatus.message}
+                </div>`
+              : ''}
+          </div>
 
           <div class="payment-section">
             <div class="payment-section-header">
@@ -1787,19 +1966,19 @@ class PremiumBookingWidget extends LitElement {
               <span>Service:</span>
               <span>${this.bookingData.serviceInfo?.service?.name}</span>
             </div>
-
+            ${this.bookingData.additionalData
+              ? html`
+                  <div class="summary-item">
+                    <span>Bathroom type:</span>
+                    <span>${this.bookingData.additionalData}</span>
+                  </div>
+                `
+              : ""}
             ${this.bookingData.serviceInfo?.squareFootage
               ? html`
                   <div class="summary-item">
-                    <span
-                      >Size
-                      (${this.bookingData.serviceInfo.squareFootage
-                        .range}):</span
-                    >
-                    <span
-                      >$${this.bookingData.serviceInfo.squareFootage
-                        .price}</span
-                    >
+                    <span>Size (${this.bookingData.serviceInfo.squareFootage.range}):</span>
+                    <span>$${this.bookingData.serviceInfo.squareFootage.price}</span>
                   </div>
                 `
               : ""}
@@ -1813,12 +1992,32 @@ class PremiumBookingWidget extends LitElement {
                   `
                 )
               : ""}
-
-            <div class="summary-item summary-total">
-              <span>Total Amount:</span>
+            <div class="summary-item">
+              <span>Subtotal:</span>
               <span>$${this.bookingData.serviceInfo?.total?.toFixed(2)}</span>
             </div>
+            ${this.discountPercent > 0 && this.discountedTotal !== null
+              ? html`
+                  <div class="summary-item success-message">
+                    <span>Coupon (${this.discountPercent}% off):</span>
+                    <span>-$${(this.bookingData.serviceInfo.total - this.discountedTotal).toFixed(2)}</span>
+                  </div>
+                  <div class="summary-item summary-total">
+                    <span>Total Amount:</span>
+                    <span>$${this.discountedTotal.toFixed(2)}</span>
+                  </div>
+                `
+              : html`
+                  <div class="summary-item summary-total">
+                    <span>Total Amount:</span>
+                    <span>$${this.bookingData.serviceInfo?.total?.toFixed(2)}</span>
+                  </div>
+                `}
           </div>
+
+          ${this.paymentError
+            ? html`<div class="error-message">${this.paymentError}</div>`
+            : ""}
 
           <div class="navigation-buttons">
             <button class="secondary" @click=${this.prevStep}>Back</button>
