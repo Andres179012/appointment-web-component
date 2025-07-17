@@ -493,7 +493,7 @@ class AppointmentWidget extends LitElement {
     this.config = {};
     this.apiSecret = "d9e180f3-d77d-4c25-a163-4605c8ddfb48";
     this.apiEndpoint =
-      "http://localhost:3000/api/appointments/new-appointment";
+      "https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/appointments/new-appointment";
   }
 
   connectedCallback() {
@@ -506,7 +506,7 @@ class AppointmentWidget extends LitElement {
     try {
       this.loadingServices = true;
       const response = await fetch(
-        `http://localhost:3000/api/appointments/config/${this.widgetId}`,
+        `https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/appointments/config/${this.widgetId}`,
         {
           headers: {
             "x-api-secret": this.apiSecret,

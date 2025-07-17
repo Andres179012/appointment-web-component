@@ -976,7 +976,7 @@ class PremiumBookingWidget extends LitElement {
     this.loading = true;
     try {
       const response = await fetch(
-        `http://localhost:3000/api/booking/settings/byAppId?appId=${this.widgetId}`,
+        `https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/booking/settings/byAppId?appId=${this.widgetId}`,
         {
           headers: { "x-api-secret": this.apiSecret },
         }
@@ -1136,7 +1136,7 @@ class PremiumBookingWidget extends LitElement {
       const code = encodeURIComponent(this.couponCode.trim());
       const amount = this.bookingData.serviceInfo.total;
       const clientId = this.widgetId;
-      const url = `http://localhost:3000/api/coupons/validate/${code}?amount=${amount}&clientId=${clientId}`;
+      const url = `https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/coupons/validate/${code}?amount=${amount}&clientId=${clientId}`;
       const res = await fetch(url, {
         headers: { "x-api-secret": this.apiSecret },
       });
@@ -1309,7 +1309,7 @@ class PremiumBookingWidget extends LitElement {
 
       // Send request to backend
       const response = await fetch(
-        "http://localhost:3000/api/booking/create-and-pay",
+        "https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/booking/create-and-pay",
         {
           method: "POST",
           headers: {
