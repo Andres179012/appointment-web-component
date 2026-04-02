@@ -1,5 +1,5 @@
-import resolve from 'rollup-plugin-node-resolve';
-import { terser } from 'rollup-plugin-terser';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 
 export default {
   input: 'src/index.js',
@@ -9,7 +9,7 @@ export default {
     sourcemap: true,
   },
   plugins: [
-    resolve(),
+    nodeResolve(),
     terser()
   ]
 };

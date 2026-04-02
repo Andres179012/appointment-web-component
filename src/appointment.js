@@ -1,5 +1,28 @@
 import { LitElement, html, css } from "lit";
 
+const createInitialFormData = (appId = "") => ({
+  appId,
+  userId: "",
+  nombreUsuario: "",
+  servicio: "",
+  servicios: [],
+  email: "",
+  phone: "+1",
+  address: {
+    street: "",
+    apartment: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "US",
+    additionalInfo: "",
+  },
+  date: "",
+  time: "",
+  notes: "",
+  status: "pending",
+});
+
 class AppointmentWidget extends LitElement {
   static styles = css`
     :host {
@@ -29,13 +52,12 @@ class AppointmentWidget extends LitElement {
     }
 
     .container {
-      padding: 2rem;
-      background: white;
-      border-radius: var(--border-radius);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-        0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      transition: var(--transition);
-      border: 1px solid var(--medium-gray);
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      box-shadow: none;
+      transition: none;
+      border: 0;
       width: 100%;
       max-width: 100%;
     }
@@ -51,28 +73,27 @@ class AppointmentWidget extends LitElement {
     }
 
     .title::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 4px;
-      background: var(--primary-color);
-      border-radius: 2px;
+      content: none;
     }
 
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.1rem;
       animation: fadeIn 0.4s ease-out;
+    }
+
+    .form-group:focus-within .form-label {
+      color: var(--primary-color);
     }
 
     .form-label {
       display: block;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      color: var(--text-color);
-      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #334155;
+      margin-bottom: 0.45rem;
+      transition: color 0.2s ease;
     }
 
     .form-label.required::after {
@@ -80,18 +101,32 @@ class AppointmentWidget extends LitElement {
       color: var(--error-color);
     }
 
-    .form-input,
-    .form-textarea,
-    .form-select,
-    .form-date,
-    .form-time {
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time) {
       width: 100%;
-      padding: 0.875rem 1rem;
-      border: 2px solid var(--medium-gray);
+      padding: 0.9rem 1rem;
+      border: 1.5px solid #cfd8e3;
       border-radius: var(--border-radius);
-      font-size: 1rem;
-      transition: var(--transition);
+      font-size: 0.98rem;
+      font-weight: 500;
+      line-height: 1.45;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease,
+        background-color 0.2s ease, transform 0.2s ease;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      color: #0f172a;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      appearance: none;
+    }
+
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time)::placeholder {
+      color: #9aa8bb;
+      font-weight: 400;
+    }
+
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time):hover {
+      border-color: #8ea0b7;
       background-color: white;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
     }
 
     .form-textarea {
@@ -99,20 +134,30 @@ class AppointmentWidget extends LitElement {
       resize: vertical;
     }
 
-    .form-input:focus,
-    .form-textarea:focus,
-    .form-select:focus,
-    .form-date:focus,
-    .form-time:focus {
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time):focus {
       outline: none;
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14),
+        0 10px 24px -14px rgba(79, 70, 229, 0.5);
       background-color: white;
+      transform: translateY(-1px);
+    }
+
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time).field-error {
+      border-color: var(--error-color);
+      background: linear-gradient(180deg, #fff7f7 0%, #fff1f1 100%);
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.08);
+    }
+
+    :is(.form-input, .form-textarea, .form-select, .form-date, .form-time).field-error:focus {
+      border-color: var(--error-color);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14),
+        0 10px 24px -14px rgba(239, 68, 68, 0.45);
     }
 
     /* Enhanced Date Picker Styling */
     .form-date {
-      padding-right: 2.5rem;
+      padding-right: 2.75rem;
       cursor: pointer;
     }
 
@@ -122,7 +167,7 @@ class AppointmentWidget extends LitElement {
 
     /* Enhanced Time Picker Styling */
     .form-time {
-      padding-right: 2.5rem;
+      padding-right: 2.75rem;
       cursor: pointer;
     }
 
@@ -389,7 +434,9 @@ class AppointmentWidget extends LitElement {
       left: 1rem;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--dark-gray);
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.95rem;
       pointer-events: none;
     }
 
@@ -397,21 +444,6 @@ class AppointmentWidget extends LitElement {
       padding-left: 2.5rem !important;
     }
 
-    /* Service select styling */
-    .form-select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364758b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      background-size: 20px;
-      padding-right: 2.5rem;
-      cursor: pointer;
-    }
-
-    .form-select:focus {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='var(--primary-color)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    }
-
-    /* Loading state for services */
     .loading-services {
       color: var(--dark-gray);
       font-size: 0.875rem;
@@ -419,9 +451,53 @@ class AppointmentWidget extends LitElement {
       padding: 1rem;
     }
 
+    .service-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .service-options.field-error {
+      border: 2px solid var(--error-color);
+      border-radius: var(--border-radius);
+      padding: 0.75rem;
+      background: #fef2f2;
+    }
+
+    .service-option {
+      border: 2px solid var(--medium-gray);
+      border-radius: var(--border-radius);
+      padding: 0.75rem 0.875rem;
+      background: white;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .service-option:hover {
+      border-color: var(--primary-color);
+      background: var(--secondary-color);
+    }
+
+    .service-option.selected {
+      border-color: var(--primary-color);
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .service-selection-hint {
+      margin-top: 0.5rem;
+      color: var(--dark-gray);
+      font-size: 0.8125rem;
+    }
+
     @media (max-width: 768px) {
       .container {
-        padding: 1.5rem;
+        padding: 0;
       }
 
       .date-time-container,
@@ -457,32 +533,13 @@ class AppointmentWidget extends LitElement {
     services: { type: Array },
     loadingServices: { type: Boolean },
     config: { type: Object },
+    invalidFields: { type: Object },
   };
 
   constructor() {
     super();
     this.currentStep = 1;
-    this.formData = {
-      appId: "",
-      userId: "",
-      nombreUsuario: "",
-      servicio: "",
-      email: "",
-      phone: "+1",
-      address: {
-        street: "",
-        apartment: "",
-        city: "",
-        state: "",
-        postalCode: "",
-        country: "US",
-        additionalInfo: "",
-      },
-      date: "",
-      time: "",
-      notes: "",
-      status: "pending",
-    };
+    this.formData = createInitialFormData();
     this.loading = false;
     this.errorMessage = "";
     this.successMessage = "";
@@ -491,14 +548,19 @@ class AppointmentWidget extends LitElement {
     this.services = [];
     this.loadingServices = true;
     this.config = {};
+    this.invalidFields = {};
     this.apiSecret = "d9e180f3-d77d-4c25-a163-4605c8ddfb48";
     this.apiEndpoint =
       "https://horizondesk-api-0a74dafcd4fb.herokuapp.com/api/appointments/new-appointment";
+    this.stepLabels = ["Your Info", "Address", "Appointment"];
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.formData.appId = this.widgetId;
+    this.formData = {
+      ...this.formData,
+      appId: this.widgetId,
+    };
     this.fetchServices();
   }
 
@@ -519,7 +581,6 @@ class AppointmentWidget extends LitElement {
       }
 
       const data = await response.json();
-      console.log("API Response Data:", data);
 
       if (data) {
         this.config = data;
@@ -536,19 +597,79 @@ class AppointmentWidget extends LitElement {
           this.services = Object.values(data.services).map(
             (service) => service.name
           );
-          console.log("Services extracted:", this.services);
         } else {
           this.services = [];
-          console.warn("No services found in response");
         }
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
       this.errorMessage = "Failed to load services. Please try again later.";
       this.services = [];
     } finally {
       this.loadingServices = false;
     }
+  }
+
+  toggleService(serviceName) {
+    const selectedServices = new Set(this.formData.servicios || []);
+
+    if (selectedServices.has(serviceName)) {
+      selectedServices.delete(serviceName);
+    } else {
+      selectedServices.add(serviceName);
+    }
+
+    const servicios = Array.from(selectedServices);
+
+    this.formData = {
+      ...this.formData,
+      servicios,
+      servicio: servicios.join(", "),
+    };
+
+    if (servicios.length > 0) {
+      this.clearInvalidField("servicios");
+    }
+  }
+
+  resetForm() {
+    this.currentStep = 1;
+    this.submitted = false;
+    this.formData = createInitialFormData(this.widgetId);
+    this.invalidFields = {};
+    this.errorMessage = "";
+  }
+
+  clearInvalidField(fieldName) {
+    if (!this.invalidFields[fieldName]) return;
+    const nextInvalidFields = { ...this.invalidFields };
+    delete nextInvalidFields[fieldName];
+    this.invalidFields = nextInvalidFields;
+  }
+
+  getFieldLabel(fieldName) {
+    const labels = {
+      nombreUsuario: "Full Name",
+      email: "Email",
+      phone: "Phone",
+      "address.street": "Street Address",
+      "address.city": "City",
+      "address.state": "State",
+      "address.postalCode": "Postal Code",
+      servicios: "Services",
+      date: "Date",
+      time: "Time",
+    };
+    return labels[fieldName] || fieldName;
+  }
+
+  setMissingFieldsError(missingFields) {
+    this.invalidFields = missingFields.reduce((acc, field) => {
+      acc[field] = true;
+      return acc;
+    }, {});
+
+    const fieldLabels = missingFields.map((field) => this.getFieldLabel(field));
+    this.errorMessage = `Missing required fields: ${fieldLabels.join(", ")}`;
   }
 
   darkenColor(color, percent) {
@@ -596,6 +717,7 @@ class AppointmentWidget extends LitElement {
   
     if (name.startsWith("address.")) {
       const field = name.split(".")[1];
+      this.clearInvalidField(name);
       this.formData = {
         ...this.formData,
         address: {
@@ -614,6 +736,10 @@ class AppointmentWidget extends LitElement {
         ...this.formData,
         phone: formattedValue,
       };
+
+      if (cleanedValue.length > 0) {
+        this.clearInvalidField("phone");
+      }
   
       requestAnimationFrame(() => {
         if (target) {
@@ -621,6 +747,7 @@ class AppointmentWidget extends LitElement {
         }
       });
     } else {
+      this.clearInvalidField(name);
       this.formData = {
         ...this.formData,
         [name]: value,
@@ -639,45 +766,54 @@ class AppointmentWidget extends LitElement {
   }
 
   validateCurrentStep() {
+    this.invalidFields = {};
+
     if (this.currentStep === 1) {
-      if (
-        !this.formData.nombreUsuario ||
-        !this.formData.email ||
-        !this.formData.phone
-      ) {
-        this.errorMessage = "Please fill in all required fields";
+      const missingFields = [];
+      if (!this.formData.nombreUsuario?.trim()) missingFields.push("nombreUsuario");
+      if (!this.formData.email?.trim()) missingFields.push("email");
+      if (!this.formData.phone || this.formData.phone === "+1") missingFields.push("phone");
+
+      if (missingFields.length > 0) {
+        this.setMissingFieldsError(missingFields);
         return false;
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(this.formData.email)) {
+        this.invalidFields = { email: true };
         this.errorMessage = "Please enter a valid email address";
         return false;
       }
 
       const phoneRegex = /^\+1\d{10}$/;
       if (!phoneRegex.test(this.formData.phone)) {
+        this.invalidFields = { phone: true };
         this.errorMessage =
           "Please enter a valid US phone number (10 digits after +1)";
         return false;
       }
     } else if (this.currentStep === 2) {
-      if (
-        !this.formData.address.street ||
-        !this.formData.address.city ||
-        !this.formData.address.state ||
-        !this.formData.address.postalCode
-      ) {
-        this.errorMessage = "Please fill in all required address fields";
+      const missingFields = [];
+      if (!this.formData.address.street?.trim()) missingFields.push("address.street");
+      if (!this.formData.address.city?.trim()) missingFields.push("address.city");
+      if (!this.formData.address.state?.trim()) missingFields.push("address.state");
+      if (!this.formData.address.postalCode?.trim()) missingFields.push("address.postalCode");
+
+      if (missingFields.length > 0) {
+        this.setMissingFieldsError(missingFields);
         return false;
       }
     } else if (this.currentStep === 3) {
-      if (
-        !this.formData.servicio ||
-        !this.formData.date ||
-        !this.formData.time
-      ) {
-        this.errorMessage = "Please fill in all required fields";
+      const missingFields = [];
+      if (!(this.formData.servicios && this.formData.servicios.length)) {
+        missingFields.push("servicios");
+      }
+      if (!this.formData.date) missingFields.push("date");
+      if (!this.formData.time) missingFields.push("time");
+
+      if (missingFields.length > 0) {
+        this.setMissingFieldsError(missingFields);
         return false;
       }
 
@@ -686,6 +822,7 @@ class AppointmentWidget extends LitElement {
       today.setHours(0, 0, 0, 0);
 
       if (selectedDate < today) {
+        this.invalidFields = { date: true };
         this.errorMessage = "Please select a date in the future";
         return false;
       }
@@ -695,6 +832,7 @@ class AppointmentWidget extends LitElement {
       if (timeParts.length === 2) {
         const minutes = parseInt(timeParts[1]);
         if (minutes % 15 !== 0) {
+          this.invalidFields = { time: true };
           this.errorMessage = "Please select a time in 15-minute intervals (00, 15, 30, 45)";
           return false;
         }
@@ -705,13 +843,28 @@ class AppointmentWidget extends LitElement {
   }
 
   async submitAppointment() {
+    if (!this.validateCurrentStep()) {
+      return;
+    }
+
     this.loading = true;
     this.errorMessage = "";
 
     try {
-      if (!this.formData.userId) {
-        this.formData.userId = `user_${Date.now()}`;
-      }
+      const userId = this.formData.userId || `user_${Date.now()}`;
+      const selectedServices = this.formData.servicios || [];
+      const submissionPayload = {
+        ...this.formData,
+        userId,
+        servicio: selectedServices.join(", "),
+        servicios: selectedServices,
+      };
+
+      this.formData = {
+        ...this.formData,
+        userId,
+        servicio: submissionPayload.servicio,
+      };
 
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
@@ -719,7 +872,7 @@ class AppointmentWidget extends LitElement {
           "Content-Type": "application/json",
           "x-api-secret": this.apiSecret,
         },
-        body: JSON.stringify(this.formData),
+        body: JSON.stringify(submissionPayload),
       });
 
       const data = await response.json();
@@ -737,35 +890,101 @@ class AppointmentWidget extends LitElement {
     }
   }
 
-  renderStep1() {
+  renderInputField({
+    label,
+    name,
+    value,
+    type = "text",
+    required = false,
+    placeholder = "",
+    className = "form-input",
+    disabled = this.loading,
+    maxLength,
+    pattern,
+    inputMode,
+    min,
+    max,
+    step,
+    list,
+  }) {
     return html`
       <div class="form-group">
-        <label class="form-label required">Full Name</label>
+        <label class="form-label${required ? " required" : ""}">${label}</label>
         <input
-          type="text"
-          name="nombreUsuario"
-          .value=${this.formData.nombreUsuario}
+          type=${type}
+          name=${name}
+          .value=${value ?? ""}
           @input=${this.handleInputChange}
-          required
-          class="form-input"
-          ?disabled=${this.loading}
-          placeholder="John Doe"
+          ?required=${required}
+          class=${`${className}${this.invalidFields[name] ? " field-error" : ""}`}
+          ?disabled=${disabled}
+          placeholder=${placeholder}
+          maxlength=${maxLength ?? ""}
+          pattern=${pattern ?? ""}
+          inputmode=${inputMode ?? ""}
+          min=${min ?? ""}
+          max=${max ?? ""}
+          step=${step ?? ""}
+          list=${list ?? ""}
         />
       </div>
+    `;
+  }
 
+  renderTextareaField({
+    label,
+    name,
+    value,
+    required = false,
+    placeholder = "",
+    className = "form-textarea",
+    disabled = this.loading,
+  }) {
+    return html`
       <div class="form-group">
-        <label class="form-label required">Email</label>
-        <input
-          type="email"
-          name="email"
-          .value=${this.formData.email}
+        <label class="form-label${required ? " required" : ""}">${label}</label>
+        <textarea
+          name=${name}
+          .value=${value ?? ""}
           @input=${this.handleInputChange}
-          required
-          class="form-input"
-          ?disabled=${this.loading}
-          placeholder="john@example.com"
-        />
+          ?required=${required}
+          class=${`${className}${this.invalidFields[name] ? " field-error" : ""}`}
+          ?disabled=${disabled}
+          placeholder=${placeholder}
+        ></textarea>
       </div>
+    `;
+  }
+
+  renderAlert(message, type) {
+    if (!message) return "";
+    const icon = type === "success" ? "✓" : "!";
+    return html`
+      <div class="alert alert-${type}">
+        <span class="alert-icon">${icon}</span>
+        ${message}
+      </div>
+    `;
+  }
+
+  renderStep1() {
+    return html`
+      ${this.renderInputField({
+        label: "Full Name",
+        name: "nombreUsuario",
+        value: this.formData.nombreUsuario,
+        required: true,
+        placeholder: "John Doe",
+      })}
+
+      ${this.renderInputField({
+        label: "Email",
+        name: "email",
+        value: this.formData.email,
+        type: "email",
+        required: true,
+        placeholder: "john@example.com",
+      })}
 
       <div class="form-group">
         <label class="form-label required">Phone</label>
@@ -777,7 +996,9 @@ class AppointmentWidget extends LitElement {
             .value=${this.formData.phone.substring(2)}
             @input=${this.handleInputChange}
             required
-            class="form-input phone-input"
+            class="form-input phone-input ${this.invalidFields.phone
+              ? "field-error"
+              : ""}"
             ?disabled=${this.loading}
             placeholder="5551234567"
             maxlength="10"
@@ -793,88 +1014,53 @@ class AppointmentWidget extends LitElement {
     return html`
       <h3 class="form-subtitle">Address Information</h3>
 
-      <div class="form-group">
-        <label class="form-label required">Street Address</label>
-        <input
-          type="text"
-          name="address.street"
-          .value=${this.formData.address.street}
-          @input=${this.handleInputChange}
-          required
-          class="form-input"
-          ?disabled=${this.loading}
-          placeholder="123 Main St"
-        />
-      </div>
+      ${this.renderInputField({
+        label: "Street Address",
+        name: "address.street",
+        value: this.formData.address.street,
+        required: true,
+        placeholder: "123 Main St",
+      })}
 
-      <div class="form-group">
-        <label class="form-label">Apartment/Suite (Optional)</label>
-        <input
-          type="text"
-          name="address.apartment"
-          .value=${this.formData.address.apartment}
-          @input=${this.handleInputChange}
-          class="form-input"
-          ?disabled=${this.loading}
-          placeholder="Apt 4B"
-        />
-      </div>
+      ${this.renderInputField({
+        label: "Apartment/Suite (Optional)",
+        name: "address.apartment",
+        value: this.formData.address.apartment,
+        placeholder: "Apt 4B",
+      })}
 
       <div class="address-container">
-        <div class="form-group">
-          <label class="form-label required">City</label>
-          <input
-            type="text"
-            name="address.city"
-            .value=${this.formData.address.city}
-            @input=${this.handleInputChange}
-            required
-            class="form-input"
-            ?disabled=${this.loading}
-            placeholder="New York"
-          />
-        </div>
+        ${this.renderInputField({
+          label: "City",
+          name: "address.city",
+          value: this.formData.address.city,
+          required: true,
+          placeholder: "New York",
+        })}
 
-        <div class="form-group">
-          <label class="form-label required">State</label>
-          <input
-            type="text"
-            name="address.state"
-            .value=${this.formData.address.state}
-            @input=${this.handleInputChange}
-            required
-            class="form-input"
-            ?disabled=${this.loading}
-            placeholder="NY"
-          />
-        </div>
+        ${this.renderInputField({
+          label: "State",
+          name: "address.state",
+          value: this.formData.address.state,
+          required: true,
+          placeholder: "NY",
+        })}
       </div>
 
-      <div class="form-group">
-        <label class="form-label required">Postal Code</label>
-        <input
-          type="text"
-          name="address.postalCode"
-          .value=${this.formData.address.postalCode}
-          @input=${this.handleInputChange}
-          required
-          class="form-input"
-          ?disabled=${this.loading}
-          placeholder="10001"
-        />
-      </div>
+      ${this.renderInputField({
+        label: "Postal Code",
+        name: "address.postalCode",
+        value: this.formData.address.postalCode,
+        required: true,
+        placeholder: "10001",
+      })}
 
-      <div class="form-group">
-        <label class="form-label">Additional Instructions</label>
-        <textarea
-          name="address.additionalInfo"
-          .value=${this.formData.address.additionalInfo}
-          @input=${this.handleInputChange}
-          class="form-textarea"
-          ?disabled=${this.loading}
-          placeholder="Gate code, landmarks, etc."
-        ></textarea>
-      </div>
+      ${this.renderTextareaField({
+        label: "Additional Instructions",
+        name: "address.additionalInfo",
+        value: this.formData.address.additionalInfo,
+        placeholder: "Gate code, landmarks, etc.",
+      })}
     `;
   }
 
@@ -897,77 +1083,72 @@ class AppointmentWidget extends LitElement {
   renderStep3() {
     return html`
       <div class="form-group">
-        <label class="form-label required">Service</label>
+        <label class="form-label required">Services</label>
         ${this.loadingServices
           ? html`
               <div class="loading-services">Loading available services...</div>
             `
           : html`
-              <select
-                name="servicio"
-                .value=${this.formData.servicio}
-                @input=${this.handleInputChange}
-                required
-                class="form-select"
-                ?disabled=${this.loading || this.loadingServices}
-              >
-                <option value="" disabled selected>Select a service</option>
+              <div class="service-options ${this.invalidFields.servicios
+                ? "field-error"
+                : ""}">
                 ${this.services.map(
                   (service) => html`
-                    <option value=${service}>${service}</option>
+                    <button
+                      type="button"
+                      class="service-option ${this.formData.servicios.includes(service)
+                        ? "selected"
+                        : ""}"
+                      @click=${() => this.toggleService(service)}
+                      ?disabled=${this.loading || this.loadingServices}
+                    >
+                      ${service}
+                    </button>
                   `
                 )}
-              </select>
+              </div>
+              <div class="service-selection-hint">
+                Selected: ${this.formData.servicios.length}
+              </div>
             `}
       </div>
 
       <div class="date-time-container">
-        <div class="form-group">
-          <label class="form-label required">Date</label>
-          <input
-            type="date"
-            name="date"
-            .value=${this.formData.date}
-            @input=${this.handleInputChange}
-            required
-            class="form-date"
-            ?disabled=${this.loading}
-            min=${new Date().toISOString().split("T")[0]}
-          />
-        </div>
+        ${this.renderInputField({
+          label: "Date",
+          name: "date",
+          value: this.formData.date,
+          type: "date",
+          className: "form-date",
+          required: true,
+          min: new Date().toISOString().split("T")[0],
+        })}
 
-        <div class="form-group">
-          <label class="form-label required">Time</label>
-          <input
-            type="time"
-            name="time"
-            .value=${this.formData.time}
-            @input=${this.handleInputChange}
-            required
-            class="form-time"
-            ?disabled=${this.loading}
-            min="08:00"
-            max="18:00"
-            step="900"
-            list="timeOptions"
-          />
+        <div>
+          ${this.renderInputField({
+            label: "Time",
+            name: "time",
+            value: this.formData.time,
+            type: "time",
+            className: "form-time",
+            required: true,
+            min: "08:00",
+            max: "18:00",
+            step: "900",
+            list: "timeOptions",
+          })}
           <datalist id="timeOptions">
             ${this.generateTimeOptions()}
           </datalist>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Additional Notes</label>
-        <textarea
-          name="notes"
-          .value=${this.formData.notes}
-          @input=${this.handleInputChange}
-          class="form-textarea"
-          ?disabled=${this.loading}
-          placeholder="Any special requirements or notes..."
-        ></textarea>
-      </div>
+      ${this.renderTextareaField({
+        label: "Additional Notes",
+        name: "notes",
+        value: this.formData.notes,
+        placeholder: "Any special requirements or notes...",
+      })}
     `;
   }
 
@@ -981,19 +1162,19 @@ class AppointmentWidget extends LitElement {
         <div class="confirmation-details">
           <p>
             We've scheduled your appointment for
-            <span class="confirmation-highlight"
-              >${this.formatDate(this.formData.date)}</span
-            >
+            <span class="confirmation-highlight">${this.formatDate(
+              this.formData.date
+            )}</span>
             at
-            <span class="confirmation-highlight"
-              >${this.formatTime(this.formData.time)}</span
-            >.
+            <span class="confirmation-highlight">${this.formatTime(
+              this.formData.time
+            )}</span>.
           </p>
           <p>
-            Service:
-            <span class="confirmation-highlight"
-              >${this.formData.servicio}</span
-            >
+            Services:
+            <span class="confirmation-highlight">${
+              this.formData.servicios.join(", ") || this.formData.servicio
+            }</span>
           </p>
           <p>
             Address:
@@ -1006,40 +1187,19 @@ class AppointmentWidget extends LitElement {
             </span>
           </p>
           <p>
-            We'll call you at
-            <span class="confirmation-highlight"
-              >${this.formatPhoneNumber(this.formData.phone)}</span
-            >
-            to confirm the details.
+            Contact phone:
+            <span class="confirmation-highlight">${this.formatPhoneNumber(
+              this.formData.phone
+            )}</span>.
+          </p>
+          <p>
+            A confirmation email will be sent to
+            <span class="confirmation-highlight">${this.formData.email}</span>.
           </p>
         </div>
         <button
           class="button"
-          @click=${() => {
-            this.currentStep = 1;
-            this.submitted = false;
-            this.formData = {
-              appId: this.widgetId,
-              userId: "",
-              nombreUsuario: "",
-              servicio: "",
-              email: "",
-              phone: "+1",
-              address: {
-                street: "",
-                apartment: "",
-                city: "",
-                state: "",
-                postalCode: "",
-                country: "US",
-                additionalInfo: "",
-              },
-              date: "",
-              time: "",
-              notes: "",
-              status: "pending",
-            };
-          }}
+          @click=${this.resetForm}
           ?disabled=${this.loading}
         >
           Schedule Another Appointment
@@ -1100,11 +1260,7 @@ class AppointmentWidget extends LitElement {
                 ${this.currentStep > step ? "✓" : step}
               </div>
               <div class="step-label">
-                ${step === 1
-                  ? "Your Info"
-                  : step === 2
-                  ? "Address"
-                  : "Appointment"}
+                ${this.stepLabels[step - 1]}
               </div>
             </div>
           `
@@ -1113,33 +1269,27 @@ class AppointmentWidget extends LitElement {
     `;
   }
 
+  renderCurrentStep() {
+    const stepContent = {
+      1: this.renderStep1,
+      2: this.renderStep2,
+      3: this.renderStep3,
+    };
+
+    return (stepContent[this.currentStep] || (() => "")).call(this);
+  }
+
   render() {
     return html`
       <div class="container">
         <h2 class="title">Schedule an Appointment</h2>
 
-        ${this.errorMessage
-          ? html`
-              <div class="alert alert-error">
-                <span class="alert-icon">!</span>
-                ${this.errorMessage}
-              </div>
-            `
-          : ""}
-        ${this.successMessage
-          ? html`
-              <div class="alert alert-success">
-                <span class="alert-icon">✓</span>
-                ${this.successMessage}
-              </div>
-            `
-          : ""}
+        ${this.renderAlert(this.errorMessage, "error")}
+        ${this.renderAlert(this.successMessage, "success")}
         ${!this.submitted
           ? html`
               ${this.renderProgressSteps()}
-              ${this.currentStep === 1 ? this.renderStep1() : ""}
-              ${this.currentStep === 2 ? this.renderStep2() : ""}
-              ${this.currentStep === 3 ? this.renderStep3() : ""}
+              ${this.renderCurrentStep()}
 
               <div class="step-buttons">
                 ${this.currentStep > 1
@@ -1172,7 +1322,9 @@ class AppointmentWidget extends LitElement {
                         @click=${this.submitAppointment}
                         ?disabled=${this.loading ||
                         this.loadingServices ||
-                        !this.formData.servicio}
+                        !(this.formData.servicios && this.formData.servicios.length) ||
+                        !this.formData.date ||
+                        !this.formData.time}
                       >
                         ${this.loading
                           ? html`<span class="spinner"></span>`

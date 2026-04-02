@@ -25,6 +25,7 @@ class PremiumBookingWidget extends LitElement {
     cardData: { type: Object },
     businessHours: { type: Object },
     formError: { type: String },
+    invalidFields: { type: Object },
   };
 
 
@@ -103,6 +104,7 @@ class PremiumBookingWidget extends LitElement {
       end: 17, // 5 PM (formato 24h)
     };
     this.formError = "";
+    this.invalidFields = {};
   }
 
 
@@ -596,7 +598,8 @@ class PremiumBookingWidget extends LitElement {
     }
 
     input,
-    select {
+    select,
+    textarea {
       width: 100%;
       padding: 0.75rem 1rem;
       border: 1px solid var(--medium-gray);
@@ -606,10 +609,16 @@ class PremiumBookingWidget extends LitElement {
     }
 
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       outline: none;
       border-color: var(--primary-color);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .input-error {
+      border-color: var(--error-color) !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
     }
 
     /* Navigation Buttons */
@@ -1079,29 +1088,70 @@ class PremiumBookingWidget extends LitElement {
     return this.subtotal; // Could add taxes or discounts here
   }
 
+  getFieldLabel(fieldName) {
+    const labels = {
+      "schedule.date": "Date",
+      "schedule.time": "Time",
+      "schedule.frequency": "Frequency",
+      "generalInfo.name": "Full Name",
+      "generalInfo.email": "Email",
+      "generalInfo.phone": "Phone Number",
+      "generalInfo.address": "Address",
+      "generalInfo.postalCode": "Postal Code",
+      "generalInfo.state": "State",
+    };
+
+    return labels[fieldName] || fieldName;
+  }
+
+  isFieldInvalid(fieldName) {
+    return Boolean(this.invalidFields[fieldName]);
+  }
+
+  clearInvalidField(fieldName) {
+    if (!this.invalidFields[fieldName]) return;
+    const nextInvalidFields = { ...this.invalidFields };
+    delete nextInvalidFields[fieldName];
+    this.invalidFields = nextInvalidFields;
+  }
+
+  setRequiredFieldsError(missingFields) {
+    this.invalidFields = missingFields.reduce((acc, field) => {
+      acc[field] = true;
+      return acc;
+    }, {});
+
+    const missingLabels = missingFields.map((field) => this.getFieldLabel(field));
+    this.formError = `Missing required fields: ${missingLabels.join(", ")}`;
+  }
+
   async nextStep() {
     this.formError = "";
+    this.invalidFields = {};
 
     if (this.currentStep === 2) {
       const { date, time, frequency } = this.bookingData.schedule;
-      if (!date || !time || !frequency) {
-        this.formError = "Please select a date, time, and frequency.";
+      const missingFields = [];
+
+      if (!date) missingFields.push("schedule.date");
+      if (!time) missingFields.push("schedule.time");
+      if (!frequency) missingFields.push("schedule.frequency");
+
+      if (missingFields.length > 0) {
+        this.setRequiredFieldsError(missingFields);
         return;
       }
     }
 
     if (this.currentStep === 3) {
       const info = this.bookingData.generalInfo;
-      const allFieldsFilled = [
-        "name",
-        "email",
-        "phone",
-        "address",
-        "postalCode",
-        "state",
-      ].every((field) => info[field]?.trim());
-      if (!allFieldsFilled) {
-        this.formError = "Please fill in all personal details.";
+      const requiredFields = ["name", "email", "phone", "address", "postalCode", "state"];
+      const missingFields = requiredFields
+        .filter((field) => !info[field]?.trim())
+        .map((field) => `generalInfo.${field}`);
+
+      if (missingFields.length > 0) {
+        this.setRequiredFieldsError(missingFields);
         return;
       }
     }
@@ -1218,6 +1268,7 @@ class PremiumBookingWidget extends LitElement {
 
   handleScheduleChange(e) {
     const { name, value } = e.target;
+    this.clearInvalidField(`schedule.${name}`);
     this.bookingData.schedule = {
       ...this.bookingData.schedule,
       [name]: value,
@@ -1226,6 +1277,7 @@ class PremiumBookingWidget extends LitElement {
 
   handleGeneralInfoChange(e) {
     const { name, value } = e.target;
+    this.clearInvalidField(`generalInfo.${name}`);
     this.bookingData.generalInfo = {
       ...this.bookingData.generalInfo,
       [name]: value,
@@ -1375,6 +1427,8 @@ class PremiumBookingWidget extends LitElement {
       payment: { method: "card" },
       additionalData: [],
     };
+    this.invalidFields = {};
+    this.formError = "";
   }
 
   formatCardNumber(e) {
@@ -1759,6 +1813,7 @@ class PremiumBookingWidget extends LitElement {
               name="date"
               .value=${this.bookingData.schedule.date}
               @change=${this.handleScheduleChange}
+              class=${this.isFieldInvalid("schedule.date") ? "input-error" : ""}
               min=${minDate}
             />
           </div>
@@ -1769,6 +1824,7 @@ class PremiumBookingWidget extends LitElement {
               name="time"
               .value=${this.bookingData.schedule?.time || ""}
               @change=${this.handleScheduleChange}
+              class=${this.isFieldInvalid("schedule.time") ? "input-error" : ""}
             >
               <option value="">Select a time</option>
               ${timeOptions.map(
@@ -1783,6 +1839,9 @@ class PremiumBookingWidget extends LitElement {
               name="frequency"
               .value=${this.bookingData.schedule.frequency}
               @change=${this.handleScheduleChange}
+              class=${this.isFieldInvalid("schedule.frequency")
+                ? "input-error"
+                : ""}
             >
               <option value="one-time">One Time</option>
               <option value="weekly">Weekly</option>
@@ -1833,6 +1892,7 @@ class PremiumBookingWidget extends LitElement {
               name="name"
               .value=${this.bookingData.generalInfo.name}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.name") ? "input-error" : ""}
             />
           </div>
           <div class="form-group">
@@ -1843,6 +1903,7 @@ class PremiumBookingWidget extends LitElement {
               name="email"
               .value=${this.bookingData.generalInfo.email}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.email") ? "input-error" : ""}
             />
           </div>
           <div class="form-group">
@@ -1853,6 +1914,7 @@ class PremiumBookingWidget extends LitElement {
               name="phone"
               .value=${this.bookingData.generalInfo.phone}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.phone") ? "input-error" : ""}
             />
           </div>
           <div class="form-group">
@@ -1863,6 +1925,7 @@ class PremiumBookingWidget extends LitElement {
               name="address"
               .value=${this.bookingData.generalInfo.address}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.address") ? "input-error" : ""}
             />
           </div>
           <div class="form-group">
@@ -1873,6 +1936,9 @@ class PremiumBookingWidget extends LitElement {
               name="postalCode"
               .value=${this.bookingData.generalInfo.postalCode}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.postalCode")
+                ? "input-error"
+                : ""}
             />
           </div>
           <div class="form-group">
@@ -1883,6 +1949,7 @@ class PremiumBookingWidget extends LitElement {
               name="state"
               .value=${this.bookingData.generalInfo.state}
               @change=${this.handleGeneralInfoChange}
+              class=${this.isFieldInvalid("generalInfo.state") ? "input-error" : ""}
             />
           </div>
           <div class="navigation-buttons">
